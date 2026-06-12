@@ -1,4 +1,4 @@
 interface:
   display_name: "StockPilot"
   short_description: "按真实行情筛选强势波段A股候选"
-  default_prompt: "Use $stockpilot to screen the current A-share market and explain the top 3-5 candidates."
+  default_prompt: "Use $stockpilot to screen the current A-share market, explain the top 3-5 candidates, and if a Markdown report file is created, provide it as a clickable Codex file link."

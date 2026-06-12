@@ -63,6 +63,7 @@ python ~/.codex/skills/stockpilot/scripts/run_selector.py --top-n 5 --report-dep
    - Prefer stocks marked `通过=是`.
    - If fewer than 3 pass, explain that the model did not find enough qualified names instead of filling the list artificially.
    - Include the report's risk section in any user-facing summary.
+   - If `--output` writes a report file, include a Codex-clickable Markdown file link in the final response, for example `[stockpilot-full-report.md](/tmp/stockpilot-full-report.md)`. Do not wrap the path in backticks or show it only as plain text.
 4. If AKShare is unavailable, say exactly which dependency/API failed and provide the install or retry command.
 
 ## What the Script Checks
