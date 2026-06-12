@@ -36,6 +36,12 @@ Decision-style full report:
 python3 ~/.codex/skills/stockpilot/scripts/run_selector.py --top-n 5 --report-depth full --output /tmp/stockpilot-full-report.md
 ```
 
+Faster full report with controlled parallelism, fewer deep-scored candidates, short-lived cache, and progress logs:
+
+```bash
+python3 ~/.codex/skills/stockpilot/scripts/run_selector.py --top-n 5 --report-depth full --deep-candidates 30 --workers 4 --cache-ttl-minutes 15 --progress --output /tmp/stockpilot-full-report.md
+```
+
 Audit report with raw metric snapshots:
 
 ```bash
@@ -58,4 +64,5 @@ python3 -m unittest discover -s ~/.codex/skills/stockpilot/scripts/tests
 
 - The selector does not invent missing stock data. Missing fields and API failures are surfaced as warnings or risk flags.
 - The script can be slow because it fetches daily, weekly, and 60-minute data for each candidate.
-- Use `--max-candidates` to reduce runtime during quick checks.
+- Use `--max-candidates`, `--deep-candidates`, `--workers`, and `--cache-ttl-minutes` to tune runtime during quick checks.
+- Full reports include hit tags, risk tags, candidate-pool sources, and score breakdowns for each stock.

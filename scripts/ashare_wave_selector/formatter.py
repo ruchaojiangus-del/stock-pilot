@@ -63,6 +63,12 @@ def _volume_summary(result: ScoreResult) -> str:
     return f"量能比{_metric(result, '近期量能比')}"
 
 
+def _badge_list(values: list[str]) -> str:
+    if not values:
+        return "-"
+    return " ".join(f"[{value}]" for value in values)
+
+
 def _decision_sentence(report: SelectionReport, result: ScoreResult) -> str:
     status = _status_label(result)
     strengths = "；".join(result.reasons[:2]) if result.reasons else "核心条件仍需继续验证"
@@ -155,22 +161,22 @@ def _format_full(report: SelectionReport, *, title: str, audit: bool = False) ->
     else:
         lines.append("## 2. 候选总览表")
         lines.append("")
-        lines.append("| 排名 | 代码 | 名称 | 状态 | 分数 | 技术趋势 | 60分钟 | 量能 | 市值 | PE | 主要风险 |")
-        lines.append("|---:|---|---|---|---:|---|---|---|---:|---:|---|")
+        lines.append("| 排名 | 代码 | 名称 | 状态 | 分数 | 命中标签 | 入池来源 | 技术趋势 | 60分钟 | 量能 | 主要风险 |")
+        lines.append("|---:|---|---|---|---:|---|---|---|---|---|---|")
         for idx, item in enumerate(report.candidates, start=1):
             risk = item.risk_flags[0] if item.risk_flags else "-"
             lines.append(
-                "| {idx} | {symbol} | {name} | {status} | {score} | {trend} | {intraday} | {volume} | {mv} | {pe} | {risk} |".format(
+                "| {idx} | {symbol} | {name} | {status} | {score} | {tags} | {sources} | {trend} | {intraday} | {volume} | {risk} |".format(
                     idx=idx,
                     symbol=item.symbol,
                     name=item.name,
                     status=_status_label(item),
                     score=item.score,
+                    tags=_badge_list(item.tags[:5]).replace("|", "/"),
+                    sources=_badge_list(item.sources).replace("|", "/"),
                     trend=_trend_summary(item).replace("|", "/"),
                     intraday=_intraday_summary(item).replace("|", "/"),
                     volume=_volume_summary(item).replace("|", "/"),
-                    mv=_metric(item, "总市值亿元"),
-                    pe=_metric(item, "市盈率"),
                     risk=risk.replace("|", "/"),
                 )
             )
@@ -183,6 +189,27 @@ def _format_full(report: SelectionReport, *, title: str, audit: bool = False) ->
             lines.append("")
             lines.append(_decision_sentence(report, item))
             lines.append("")
+            if item.tags or item.risk_tags:
+                lines.append("### 命中标签")
+                lines.append("")
+                if item.tags:
+                    lines.append(_badge_list(item.tags))
+                if item.risk_tags:
+                    lines.append(f"风险标签：{_badge_list(item.risk_tags)}")
+                lines.append("")
+            if item.sources:
+                lines.append("### 入池来源")
+                lines.append("")
+                lines.append(_badge_list(item.sources))
+                lines.append("")
+            if item.score_breakdown:
+                lines.append("### 分数构成")
+                lines.append("")
+                lines.append("| 模块 | 得分 |")
+                lines.append("|---|---:|")
+                for module, points in item.score_breakdown.items():
+                    lines.append(f"| {module} | +{points} |")
+                lines.append("")
             lines.append("### 条件通过情况")
             lines.append("")
             lines.append("| 模块 | 要求 | 当前数据 | 结果 |")

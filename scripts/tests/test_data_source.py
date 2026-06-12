@@ -1,4 +1,5 @@
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -94,6 +95,23 @@ class DataSourceFallbackTest(unittest.TestCase):
 
         self.assertFalse(daily.empty)
         self.assertFalse(weekly.empty)
+        self.assertEqual(ak.daily_calls, 1)
+
+    def test_disk_cache_reuses_standardized_daily_data(self):
+        ak = DailyCacheAK()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            source = self.make_source(ak)
+            source.cache_dir = Path(tmpdir)
+            source.cache_ttl_minutes = 60
+
+            first = source.daily("600000", "daily")
+            second_source = self.make_source(ak)
+            second_source.cache_dir = Path(tmpdir)
+            second_source.cache_ttl_minutes = 60
+            second = second_source.daily("600000", "daily")
+
+        self.assertFalse(first.empty)
+        self.assertFalse(second.empty)
         self.assertEqual(ak.daily_calls, 1)
 
 

@@ -49,6 +49,12 @@ Generate a decision-style deep report with richer evidence cards:
 python ~/.codex/skills/stockpilot/scripts/run_selector.py --top-n 5 --report-depth full --output /tmp/stockpilot-full-report.md
 ```
 
+Run faster with controlled parallel scoring, fewer deep candidates, disk cache, and progress logs:
+
+```bash
+python ~/.codex/skills/stockpilot/scripts/run_selector.py --top-n 5 --report-depth full --deep-candidates 30 --workers 4 --cache-ttl-minutes 15 --progress --output /tmp/stockpilot-full-report.md
+```
+
 ## Workflow
 
 1. Read `references/selection_logic.md` when you need the exact mapping from the user's document to the scoring rules.
@@ -67,7 +73,7 @@ python ~/.codex/skills/stockpilot/scripts/run_selector.py --top-n 5 --report-dep
 - Daily/weekly technicals: MA13 uptrend, MA5/MA13 relation, MACD not below zero, volume expansion, year limit-up count, price position.
 - 60-minute technicals: MA13 trend not broken and MACD above zero.
 - Output: Markdown table plus per-stock reasons, risk flags, and raw metrics.
-- Deep output: conclusion summary, candidate overview, per-stock evidence cards, condition matrix, next observations, and data-quality warnings.
+- Deep output: conclusion summary, candidate overview, per-stock evidence cards, hit tags, candidate-pool sources, score breakdown, condition matrix, next observations, and data-quality warnings.
 
 ## Important Constraints
 
@@ -81,6 +87,10 @@ python ~/.codex/skills/stockpilot/scripts/run_selector.py --top-n 5 --report-dep
 
 - `--top-n 3..5`: number of names to display.
 - `--max-candidates N`: cap API-heavy scoring candidates.
+- `--deep-candidates N`: cap candidates that enter daily/weekly/60-minute deep scoring after prefiltering.
+- `--workers N`: parallel worker count for deep scoring; lower it when data endpoints are unstable.
+- `--cache-ttl-minutes N`: enable local disk cache for reusable normalized daily bars.
+- `--progress`: print progress logs to stderr.
 - `--watchlist 600000,000001`: priority self-selected stock pool.
 - `--no-concepts`: skip concept-board API calls if they are slow or unstable.
 - `--fast-fallback`: skip Eastmoney first attempts and use Sina/backup endpoints where available; PE may be missing.

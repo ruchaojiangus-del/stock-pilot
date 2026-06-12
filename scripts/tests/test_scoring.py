@@ -93,6 +93,14 @@ class ScoreCandidateTest(unittest.TestCase):
         self.assertTrue(any("题材定级" in reason for reason in result.reasons))
         self.assertTrue(any("技术筛选" in reason for reason in result.reasons))
         self.assertTrue(any("核心交易系统" in reason for reason in result.reasons))
+        self.assertIn("环境1级", result.tags)
+        self.assertIn("市值合规", result.tags)
+        self.assertIn("日线MA13向上", result.tags)
+        self.assertIn("60分钟趋势未破", result.tags)
+        self.assertIn("涨停池", result.tags)
+        self.assertGreater(result.score_breakdown["环境"], 0)
+        self.assertGreater(result.score_breakdown["题材"], 0)
+        self.assertGreater(result.score_breakdown["技术"], 0)
 
     def test_rejects_stock_with_broken_trend_and_negative_profit_proxy(self):
         daily = rising_daily_frame()
@@ -122,6 +130,8 @@ class ScoreCandidateTest(unittest.TestCase):
         self.assertFalse(result.passed)
         self.assertTrue(any("市值" in flag or "盈利" in flag for flag in result.risk_flags))
         self.assertTrue(any("60分钟MA13" in flag or "环境" in flag for flag in result.risk_flags))
+        self.assertIn("环境3级风险", result.risk_tags)
+        self.assertIn("市值不合规", result.risk_tags)
 
 
 if __name__ == "__main__":

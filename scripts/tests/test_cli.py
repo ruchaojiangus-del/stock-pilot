@@ -14,6 +14,14 @@ class CliTest(unittest.TestCase):
 
         self.assertEqual(args.report_depth, "full")
 
+    def test_performance_arguments(self):
+        args = parse_args(["--workers", "4", "--deep-candidates", "30", "--cache-ttl-minutes", "15", "--progress"])
+
+        self.assertEqual(args.workers, 4)
+        self.assertEqual(args.deep_candidates, 30)
+        self.assertEqual(args.cache_ttl_minutes, 15)
+        self.assertTrue(args.progress)
+
 
 if __name__ == "__main__":
     unittest.main()

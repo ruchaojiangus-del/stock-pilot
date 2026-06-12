@@ -38,6 +38,10 @@ class FormatterDepthTest(unittest.TestCase):
                         "近期量能比": 1.23,
                         "近一年涨停次数": 5,
                     },
+                    tags=["环境2级", "S级题材:人工智能", "市值合规", "日线MA13向上", "60分钟趋势未破"],
+                    risk_tags=["量能待确认"],
+                    sources=["S级题材池", "涨幅榜"],
+                    score_breakdown={"环境": 8, "题材": 20, "基本面": 16, "技术": 24, "60分钟": 16},
                 )
             ],
             rejected_count=4,
@@ -55,6 +59,12 @@ class FormatterDepthTest(unittest.TestCase):
         self.assertIn("强观察", markdown)
         self.assertIn("数据完整度", markdown)
         self.assertIn("概念板块接口失败", markdown)
+        self.assertIn("### 命中标签", markdown)
+        self.assertIn("[S级题材:人工智能]", markdown)
+        self.assertIn("### 入池来源", markdown)
+        self.assertIn("[S级题材池]", markdown)
+        self.assertIn("### 分数构成", markdown)
+        self.assertIn("| 题材 | +20 |", markdown)
 
     def test_compact_report_remains_default_shape(self):
         markdown = format_markdown(self.sample_report())

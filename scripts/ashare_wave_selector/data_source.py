@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+import json
+import os
+from pathlib import Path
 import re
 from typing import Iterable
 
@@ -160,15 +163,61 @@ class AKShareDataSource:
     """Thin wrapper around AKShare with column normalization and explicit errors."""
 
     prefer_fallback: bool = False
+    cache_ttl_minutes: int = 0
+    cache_dir: Path | None = None
     warnings: list[str] = field(default_factory=list)
     _daily_cache: dict[tuple[str, str, str], pd.DataFrame] = field(default_factory=dict, init=False, repr=False)
 
     def __post_init__(self):
         self.ak = _load_akshare()
+        if self.cache_dir is None:
+            self.cache_dir = Path(os.environ.get("STOCKPILOT_CACHE_DIR", Path.home() / ".cache" / "stockpilot"))
+
+    def _cache_path(self, namespace: str, *parts: str) -> Path:
+        safe = "_".join(re.sub(r"[^A-Za-z0-9_.-]+", "-", str(part)) for part in parts)
+        return Path(self.cache_dir or Path.home() / ".cache" / "stockpilot") / namespace / f"{safe}.json"
+
+    def _read_cached_frame(self, namespace: str, *parts: str) -> pd.DataFrame | None:
+        if self.cache_ttl_minutes <= 0:
+            return None
+        path = self._cache_path(namespace, *parts)
+        if not path.exists():
+            return None
+        age_seconds = datetime.now().timestamp() - path.stat().st_mtime
+        if age_seconds > self.cache_ttl_minutes * 60:
+            return None
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            frame = pd.DataFrame(payload.get("records", []))
+            for column in ("date", "datetime"):
+                if column in frame.columns:
+                    frame[column] = pd.to_datetime(frame[column], errors="coerce")
+            return frame
+        except Exception as exc:
+            self.warnings.append(f"读取缓存失败（{path.name}），已忽略：{exc}")
+            return None
+
+    def _write_cached_frame(self, frame: pd.DataFrame, namespace: str, *parts: str):
+        if self.cache_ttl_minutes <= 0:
+            return
+        path = self._cache_path(namespace, *parts)
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            serializable = frame.copy()
+            for column in ("date", "datetime"):
+                if column in serializable.columns:
+                    serializable[column] = serializable[column].astype(str)
+            path.write_text(json.dumps({"records": serializable.to_dict("records")}, ensure_ascii=False), encoding="utf-8")
+        except Exception as exc:
+            self.warnings.append(f"写入缓存失败（{path.name}），已忽略：{exc}")
 
     def _fallback_daily(self, symbol: str, start_date: str, adjust: str) -> pd.DataFrame:
         key = (normalize_symbol(symbol), start_date, adjust)
         if key not in self._daily_cache:
+            cached = self._read_cached_frame("daily", *key)
+            if cached is not None:
+                self._daily_cache[key] = cached
+                return cached.copy()
             raw = self.ak.stock_zh_a_daily(
                 symbol=prefixed_symbol(symbol),
                 start_date=start_date,
@@ -176,6 +225,7 @@ class AKShareDataSource:
                 adjust=adjust,
             )
             self._daily_cache[key] = normalize_daily(raw)
+            self._write_cached_frame(self._daily_cache[key], "daily", *key)
         return self._daily_cache[key].copy()
 
     def spot(self) -> pd.DataFrame:
